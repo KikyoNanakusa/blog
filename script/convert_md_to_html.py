@@ -7,9 +7,9 @@ def parse_arguments():
     parser = argparse.ArgumentParser(
         description="MarkdownをHTMLに変換し、テンプレートに埋め込むスクリプト"
     )
-    parser.add_argument("md_file", help="Markdown path")
-    parser.add_argument("template_file", help="HTML template path")
-    parser.add_argument("output_file", help="Converted html path")
+    parser.add_argument("--md_file", help="Markdown path")
+    parser.add_argument("--template_file", help="HTML template path")
+    parser.add_argument("--output_file", help="Converted html path")
     return parser.parse_args()
 
 
@@ -34,7 +34,7 @@ def generate_html_template(template, title, content):
 
 
 def convert_md_to_html(md_text):
-    return markdown.markdown(md_text, extensions=["fenced_code", "tables"])
+    return markdown.markdown(md_text, extensions=["fenced_code", "tables", "footnotes"])
 
 
 def save_html_file(file_path, html_content):
@@ -62,4 +62,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
