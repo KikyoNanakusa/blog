@@ -33,21 +33,15 @@ jobs:
     - name: Convert MD to HTML
       run: |
         for MD_FILE in $MD_FILES; do
-          MD_FILE_NAME=$(basename $MD_FILE .md)  
-          python script/convert_md_to_html.py --md_file=$MD_FILE --template_file=script/template/template.html --output_file=docs/blog_html/${MD_FILE_NAME}.html
+          MD_FILE_NAME=$(basename $MD_FILE .md)  # ファイル名から拡張子を除去
+          python script/convert_md_to_html.py --md_file=$MD_FILE --template_file=script/template/template.html --output_file=docs/blog_html/${MD_FILE_NAME}.html --blog_index_file=blog_index.html
         done
 
-    - name: Update blog_index.html
-      run: |
-        for MD_FILE in $MD_FILES; do
-          MD_FILE_NAME=$(basename $MD_FILE .md) 
-          echo '<li><a href="blog_html/'${MD_FILE_NAME}'.html">'${MD_FILE_NAME}'について</a></li>' >> blog_index.html
-        done
-
+    # blog_index.htmlをコミットしてプッシュ
     - name: Commit and Push changes
       run: |
         git config --local user.email "nanakusa.vrc@gmail.com"
         git config --local user.name "KikyoNanakusa"
-        git add -A
-        git commit -m "Convert MD to HTML and update index"
+        git add docs/blog_html/*.html blog_index.html
+        git commit -m "Convert MD to HTML and update blog index"
         git push origin main
