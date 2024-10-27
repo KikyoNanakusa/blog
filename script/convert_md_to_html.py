@@ -69,7 +69,8 @@ def update_blog_index(title, html_filename, blog_index_path):
         return
 
     date = datetime.now().strftime("%Y年%m月%d日")
-    new_entry = f'<li><a href="../{html_filename}">{title}</a>: {date}</li>'
+    name = html_filename.replace("docs/", "")
+    new_entry = f'<li><a href="{name}">{title}</a>: {date}</li>'
 
     updated_content = blog_index_content.replace("<ul>", f"<ul>\n          {new_entry}")
 
