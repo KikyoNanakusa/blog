@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <title>負のインデックスで学ぶポインタと配列 - 七草桔梗</title>
+    <meta name="description" content="負のインデックスで学ぶポインタと配列">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="../style/style.css">
+  </head>
+
+  <body>
+    <div class="container">
+      <header>
+        <h1>負のインデックスで学ぶポインタと配列</h1>
+        <p>投稿日: 2024年11月30日 00:51:08</p>
+        <p>更新日: 2024年11月30日 00:51:08</p>
+      </header>
+
+      <article>
+        <p>pythonなど, 言語仕様として, 可変長配列を扱うことができるプログラミング言語で以下のような記法を見ることがある.</p>
+<pre><code class="language-python">c = &quot;abcde&quot;
+print(c[-1])
+</code></pre>
+<p>配列のインデックスに負の数を指定するという記法である.
+上記のスクリプトを実行すると実行結果は以下のようになる.</p>
+<pre><code class="language-bash">python3 test.py
+e
+</code></pre>
+<p><code>-1</code>なるインデックスは, 配列の一番最後の要素を取得していることが分かる.
+では, このような記法をC言語で使用すると何が起こるだろうか.</p>
+<h1>実験</h1>
+<pre><code class="language-c">#include &lt;stdio.h&gt;
+
+int main() {
+  char *c = &quot;abcde&quot;;
+  char *test = &amp;c[4];
+
+  printf(&quot;%c\n&quot;, test[-1]);
+}
+
+</code></pre>
+<p>以上のようなCのコードを用意した.  (いろいろ不審に思われる点があると思うが, 一旦無視してほしい. )
+このコードをコンパイルし, 実行すると以下のような結果となる.</p>
+<pre><code class="language-bash">$ gcc test.c -o test
+$ ./test 
+d
+</code></pre>
+<p><code>printf</code> によって出力された文字は<code>d</code>となった.<br />
+このコードを通して, ポインタと配列のかかわりを説明しようと思う.</p>
+<h1>C言語における配列</h1>
+<p>先ほどの実験を説明するには, C言語において, 配列がどのように扱われているかを, 先に知っておく必要がある.  </p>
+<pre><code class="language-c">#include &lt;stdio.h&gt;
+
+void print_array(int *arr, int size) {
+    for (int i = 0; i &lt; size; i++) {
+        printf(&quot;%d &quot;, arr[i]);  
+    }
+    printf(&quot;\n&quot;);
+}
+
+int main() {
+    int numbers[] = {1, 2, 3, 4, 5};  
+    int size = sizeof(numbers) / sizeof(numbers[0]);  
+
+    print_array(numbers, size);
+
+    return 0;
+}
+
+</code></pre>
+<p>C言語に触ったことのある人ならば, 上に示したものと, 同じようなコードを見たことがあると思う.
+<code>print_array</code>は<code>int</code>型の配列を受け取り, 要素を順番に出力する関数である.
+この例で重要なのは, <code>print_array</code>関数が配列をポインタとして受け取っていることである.
+これは, 初学者を混乱させることでも有名だが, C言語では, 関数の引数にポインタを渡す際は, ポインタとして渡さなくてはならない.  これについてやや踏み込んでみようと思う.</p>
+<h2>アセンブリレベルで配列を見る</h2>
+<p>先ほど例として挙げたプログラムをコンパイルし, それによって得られたアセンブリを覗いてみよう.</p>
+<pre><code>00000000000011ea &lt;main&gt;:
+    11ea:       f3 0f 1e fa             endbr64 
+    11ee:       55                      push   rbp
+    11ef:       48 89 e5                mov    rbp,rsp
+    11f2:       48 83 ec 30             sub    rsp,0x30
+    11f6:       64 48 8b 04 25 28 00    mov    rax,QWORD PTR fs:0x28
+    11fd:       00 00 
+    11ff:       48 89 45 f8             mov    QWORD PTR [rbp-0x8],rax
+    1203:       31 c0                   xor    eax,eax
+    1205:       c7 45 e0 01 00 00 00    mov    DWORD PTR [rbp-0x20],0x1
+    120c:       c7 45 e4 02 00 00 00    mov    DWORD PTR [rbp-0x1c],0x2
+    1213:       c7 45 e8 03 00 00 00    mov    DWORD PTR [rbp-0x18],0x3
+    121a:       c7 45 ec 04 00 00 00    mov    DWORD PTR [rbp-0x14],0x4
+    1221:       c7 45 f0 05 00 00 00    mov    DWORD PTR [rbp-0x10],0x5
+    1228:       c7 45 dc 05 00 00 00    mov    DWORD PTR [rbp-0x24],0x5
+    122f:       8b 55 dc                mov    edx,DWORD PTR [rbp-0x24]
+    1232:       48 8d 45 e0             lea    rax,[rbp-0x20]
+    1236:       89 d6                   mov    esi,edx
+    1238:       48 89 c7                mov    rdi,rax
+    123b:       e8 49 ff ff ff          call   1189 &lt;print_array&gt;
+    1240:       b8 00 00 00 00          mov    eax,0x0
+    1245:       48 8b 55 f8             mov    rdx,QWORD PTR [rbp-0x8]
+    1249:       64 48 2b 14 25 28 00    sub    rdx,QWORD PTR fs:0x28
+    1250:       00 00 
+    1252:       74 05                   je     1259 &lt;main+0x6f&gt;
+    1254:       e8 27 fe ff ff          call   1080 &lt;__stack_chk_fail@plt&gt;
+    1259:       c9                      leave  
+    125a:       c3                      ret    
+
+</code></pre>
+<p>これは<code>objdump</code>によって得た, <code>main</code>関数のアセンブリである. 例示したコードを<code>gcc</code>でオプションを付けずにコンパイルした結果を渡して作った.  (intelのCPUの乗ったマシンであれば, これとおおむね同じようなアセンブリが得られると思うが, ArmのCPUの乗ったPCだと様相が異なると思う)
+アセンブリに触れた経験のない状態でこれを見ると, 複雑そうに見えるかもしれないが, 注目すべき点に絞ってみれば, 比較的理解は容易である.</p>
+<blockquote>
+<p>[!NOTE]
+<code>objdump</code>はバイナリを機械語に直す<strong>逆アセンブラ</strong>と呼ばれるツールである.
+このツールは<code>builtin</code>パッケージに含まれているので各自インストールして試してみるのもよい.
+試す場合は <code>-M intel</code> オプションを付けることで本エントリで示す例と同じ逆アセンブル結果を見ることができる.
+このオプションは, 出力されるアセンブリの記法をintel記法にするためのオプションである.
+アセンブリ言語には<strong>AT&amp;T記法</strong>と, <strong>intel記法</strong> という2種類の記法があり, 本エントリではintel記法を採用している.</p>
+</blockquote>
+<p>注目してほしいのは以下の部分である.</p>
+<pre><code class="language-asm"> 1205:       c7 45 e0 01 00 00 00    mov    DWORD PTR [rbp-0x20],0x1
+    120c:       c7 45 e4 02 00 00 00    mov    DWORD PTR [rbp-0x1c],0x2
+    1213:       c7 45 e8 03 00 00 00    mov    DWORD PTR [rbp-0x18],0x3
+    121a:       c7 45 ec 04 00 00 00    mov    DWORD PTR [rbp-0x14],0x4
+    1221:       c7 45 f0 05 00 00 00    mov    DWORD PTR [rbp-0x10],0x5
+    1228:       c7 45 dc 05 00 00 00    mov    DWORD PTR [rbp-0x24],0x5
+</code></pre>
+<p>各行について, 左側は一旦無視して, 右の<code>mov</code>から始まる文字列に注目してほしい.
+ここではアセンブリの文法について詳しく説明することはせず, 最低限これを読むために必要なことを説明する.</p>
+<ul>
+<li><code>0xnm</code>といった記法で表されるものは, <strong>16進数の数値</strong>を表す. つまり, <code>0x1</code>というのは単に10進数でいうところの<code>1</code>である.</li>
+<li><code>mov</code>というのはアセンブリの命令の一つであり, <code>mov dest, src</code>という形式を取り, <code>src</code>の値を, <code>dest</code>に向けてコピーするということをしている.</li>
+<li><code>DWORD PTR</code>というのは, <code>mov</code>によってコピーされる値が, 4バイトであるということを表す.</li>
+<li><code>rbp</code>というのはメモリ上の決まった位置を表している</li>
+<li><code>[rbp-0xhoge]</code>というのは, この表記全体で, メモリ上の特定の位置から, nバイト離れた位置を表す.</li>
+</ul>
+<p>これだけ理解すれば, 上記のアセンブリが読めるはずである.</p>
+<pre><code class="language-asm">mov DWORD PTR [rbp-0x20], 0x1
+</code></pre>
+<p>例えば1行目は, <code>0x1</code>という値を, <code>[rbp-0x20]</code>で表される, メモリ上の特定の位置に, 4バイトのデータとして, 書き込んでいるということだ.
+続く行を読み進めると, <code>[rbp-0x20]</code>, <code>[rbp-0x1c]</code>, <code>[rbp-0x18]</code>, ...と4バイトずつ離れた位置に, <code>0x1</code>, <code>0x2</code>, <code>0x3</code>, ...といった値を書き込んでいるとわかる.</p>
+<p>これらは, Cで書いたソースコードの以下の部分と対応している.</p>
+<pre><code class="language-c">int numbers[] = {1, 2, 3, 4, 5};  
+</code></pre>
+<p>これによって分かることは, C言語の配列の要素は, メモリ上で<strong>連続した位置</strong>に書き込まれ, 配置されるということである.</p>
+<blockquote>
+<p>[!NOTE]
+今回は実感してもらうために, これを実験的に確かめたが, 「本当にいかなる場合も配列はメモリ上で連続したデータになるのだろうか」とおもう読者もいるだろう.
+C言語の仕様を定める規格の一つであるC99の6.2.5 に以下のような記述があり, 仕様として定まっている.
+An array type describes a contiguously allocated nonempty set of objects with a particular member object type, called the element type.</p>
+</blockquote>
+<h2>配列とポインタ</h2>
+<p>ここまでで, C言語では配列がメモリ上の連続した位置に書き込まれることが分かった.
+そこで, 以下のようなコードについて考えてみる.</p>
+<pre><code class="language-c">int num[] = {1, 3, 5};
+int* addr = &amp;num
+
+int value = *(addr + 1)
+</code></pre>
+<p>配列を宣言し, その配列のアドレスを求め, その後 <code>addr + 1</code> という値をデリファレンスしている.
+このコードをコンパイルし, 実行すると, <code>value</code>には何が入るだろうか.</p>
+<p>これを知るためには, C言語のポインタ演算に関する仕様を知っておく必要がある.
+Cのポインタ演算は賢く作られており, ポインタに加算する値は, ポインタが参照する値の型のサイズに自動的にスケールされる.
+つまり<code>addr + 1</code> は自動的に, <code>addr + 1 * sizeof(int)</code> に置換されるということだ.</p>
+<p>元のコードに戻る. <code>num</code>と呼ばれる配列はメモリ上で以下のように整列しているはずである.</p>
+<pre><code>+---+          上位アドレス
+| 5 | 4bytes
++---+   |
+| 3 | 4bytes
++---+   |
+| 1 | 4bytes
++---+ &lt;- &amp;num  低位アドレス
+</code></pre>
+<p><code>addr</code>とは<code>&amp;num</code>であったはずなので, <code>addr + 1</code>は<code>&amp;num</code>から4バイト分先, データにするところの<code>3</code>のアドレスになる
+<code>addr + 0</code>とすれば, <code>0</code>のアドレスを指し示すし, <code>addr + 2</code>とすれば, <code>5</code>のアドレスを指し示す.</p>
+<h2>配列のインデックス</h2>
+<p>先ほどまでの説明で, 勘のいい人はこれから言いたいことが分かったかもしれない.</p>
+<pre><code class="language-c">int num[] = {1, 3, 5};
+printf(&quot;%d&quot;, num[1]);
+</code></pre>
+<p>上記コードのように, C言語では配列から一つのデータを指定する際に <code>num[1]</code>といった記法を使用する.
+これは内部的には以下のように置換される.</p>
+<pre><code class="language-c">//num[1]
+*(&amp;num + 1)
+</code></pre>
+<p>これが理解できると, プログラミングを始めたばかりのころ我々を多いに困惑させた, 配列のインデックスが<code>0</code>から始まるのはなぜかという疑問に答えを出すことができる.</p>
+<pre><code class="language-c">//num[0]
+*(&amp;num + 0)
+</code></pre>
+<p>配列とは, 単に, 連続したデータに関して, 特定の位置を示すポインタなのだ.</p>
+<blockquote>
+<p>[!NOTE]
+この, 配列とポインタ演算の互換性についても, C言語の仕様として定まっている.
+厳密には <code>E1[E2]</code> は <code>(*((E1) + (E2)))</code> と等価であるとの記載がある.
+興味があれば, C99 6.5.2.2 を参照するとよい.
+</p>
+</blockquote>
+<h2>負のインデックス</h2>
+<p>やっとタイトルの内容にたどり着くことができた.
+冒頭例に出した, 以下のコードはどのようにコンパイルされ, 動作するだろうか</p>
+<pre><code class="language-c">#include &lt;stdio.h&gt;
+
+int main() {
+  char *c = &quot;abcde&quot;;
+  char *test = &amp;c[4];
+
+  printf(&quot;%c\n&quot;, test[-1]);
+}
+
+</code></pre>
+<p>ここまででの解説で示したように, 配列の実態はポインタである.</p>
+<pre><code class="language-c">char *c = &quot;abcde&quot;;
+</code></pre>
+<p>故に以上のコードは, 単に <code>char c[] = "abcde</code> とおおむね同じこととなる. (厳密にはメモリ割り当てなどが異なることもあるがここでは触れないこととする. )</p>
+<pre><code class="language-c">char *test = &amp;c[4];
+</code></pre>
+<p>この行では, <code>test</code>という名前で<code>char</code>型のポインタ変数を宣言し, そこに<code>c[4]</code>のアドレスを代入している.
+<code>c[4]</code>は <code>*(&amp;c + 4)</code> に置換されたはずだったので, 実態としては, <code>e</code> のアドレスが代入される.
+<code>test[-1]</code>は以下のように置換されたはずだ.</p>
+<pre><code class="language-c">// test[-1]
+*(&amp;test -1)
+</code></pre>
+<p><code>test</code>は<code>char</code>型のポインタなので <code>test[-1]</code> は単に<code>test</code>の指すアドレスの1バイト前を示す.  つまり, データとしては<code>d</code> だ.</p>
+<h2>ポインタと配列</h2>
+<p>本エントリでは, C言語初学者にとって1つの壁になるであろう, 配列とポインタの関係について, 負のインデックスという具体例を用いて説明した.
+ポインタの考え方は, コンピュータサイエンスにおいて, 普遍に用いられるものであると思うので, 身に着けておくと得だと思う.
+もし誤字脱字, 間違いなどがあれば以下の連絡先に連絡してほしい.
+X: @77777kusa</p>
+<h2>Appendix: こんなのいつ使うんですか</h2>
+<p>ポインタと配列の関係を説明するための具体例として, 負のインデックスを用いたが, これについて, こんなテクニックいつ使うんですかという疑問が発生するのは当然であると思う. そのため, 付録として, 負のインデックスについての具体例を挙げておく.</p>
+<p>Rui Ueyama氏の開発している, <a href="https://github.com/rui314/mold">mold</a>という, 高速でオープンソースなリンカがある. このプロジェクト内に以下のようなコードがある.</p>
+<pre><code class="language-c">static bool is_ld(const char *path) {
+  const char *ptr = path + strlen(path);
+  while (path &lt; ptr &amp;&amp; ptr[-1] != '/')
+    ptr--;
+
+  return !strcmp(ptr, &quot;ld&quot;) || !strcmp(ptr, &quot;ld.lld&quot;) ||
+         !strcmp(ptr, &quot;ld.gold&quot;) || !strcmp(ptr, &quot;ld.bfd&quot;) ||
+         !strcmp(ptr, &quot;ld.mold&quot;);
+}
+</code></pre>
+<p><a href="https://github.com/rui314/mold/blob/5bb914553fc0d0dcfe2b87204e06ebd1a9eff9b7/src/mold-wrapper.c#L61">https://github.com/rui314/mold/blob/5bb914553fc0d0dcfe2b87204e06ebd1a9eff9b7/src/mold-wrapper.c#L61</a></p>
+<p>この関数は, ある文字列について <code>/</code> が登場するまで後ろから探索している. 先にポインタを文字列の終端に送って, 先頭側に進めており, エレガントなコードであると思う.</p>
+<p>負のインデックスを使わないと以下のようなコードになるんじゃなかろうか.</p>
+<pre><code class="language-c">const char *ptr = path + strlen(path); 
+while (ptr &gt; path) { 
+ ptr--; 
+ if (*ptr == '/')  break; 
+}
+</code></pre>
+<p>文字列操作において, 1文字前なんかを参照したい際なんかには有用であると思う.
+ただしながら, 気を付けて使わねば, 容易に配列外へのアクセスを許してしまうし, トリッキーなコードは可読性を下げるため, あまり積極的に使うものではないと思う. 使用する際は, 安全性や他の開発者目線での可読性に十分注意されたし.</p>
+      </article>
+
+      <div class="navigation">
+        <p><a href="../blog_index.html">ブログインデックスに戻る</a></p>
+        <p><a href="../index.html">ホームに戻る</a></p>
+      </div>
+    </div>
+
+    <footer>
+      <p>&copy; 2024 七草桔梗. All Rights Reserved.</p>
+    </footer>
+  </body>
+</html>
