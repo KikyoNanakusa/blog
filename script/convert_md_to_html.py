@@ -1,111 +1,301 @@
-import markdown
-from datetime import datetime
+#!/usr/bin/env python3
+"""
+Markdown to HTML converter using only standard library
+"""
+import re
 import os
+from datetime import datetime
+from pathlib import Path
 
 
-def load_markdown_file(file_path):
-    with open(file_path, "r", encoding="utf-8") as f:
-        return f.read()
+class MarkdownConverter:
+    """Markdown to HTML converter using regex patterns"""
+    
+    def __init__(self):
+        self.patterns = [
+            # Headers
+            (r'^### (.*)$', r'<h3>\1</h3>'),
+            (r'^## (.*)$', r'<h2>\1</h2>'),
+            (r'^# (.*)$', r'<h1>\1</h1>'),
+            
+            # Bold and italic
+            (r'\*\*(.*?)\*\*', r'<strong>\1</strong>'),
+            (r'\*(.*?)\*', r'<em>\1</em>'),
+            
+            # Code blocks
+            (r'```(.*?)```', r'<pre><code>\1</code></pre>', re.DOTALL),
+            (r'`(.*?)`', r'<code>\1</code>'),
+            
+            # Links
+            (r'\[([^\]]+)\]\(([^)]+)\)', r'<a href="\2">\1</a>'),
+            
+            # Line breaks
+            (r'\n\n', r'</p><p>'),
+            (r'\n', r'<br>'),
+        ]
+    
+    def convert(self, markdown_text):
+        """Convert markdown text to HTML"""
+        # Remove first line (title) and process content
+        lines = markdown_text.splitlines()
+        if lines and lines[0].startswith('#'):
+            content_lines = lines[1:]
+        else:
+            content_lines = lines
+        
+        # Process line by line
+        processed_lines = []
+        in_list = False
+        
+        for line in content_lines:
+            if not line.strip():
+                # Empty line - close list if open, but don't add br here
+                if in_list:
+                    processed_lines.append('</ul>')
+                    in_list = False
+                processed_lines.append('')  # Add empty line marker
+                continue
+            
+            line = line.strip()
+            
+            # Check for headers
+            if re.match(r'^### (.*)$', line):
+                if in_list:
+                    processed_lines.append('</ul>')
+                    in_list = False
+                processed_lines.append(f'<h3>{re.match(r"^### (.*)$", line).group(1)}</h3>')
+            elif re.match(r'^## (.*)$', line):
+                if in_list:
+                    processed_lines.append('</ul>')
+                    in_list = False
+                processed_lines.append(f'<h2>{re.match(r"^## (.*)$", line).group(1)}</h2>')
+            elif re.match(r'^# (.*)$', line):
+                if in_list:
+                    processed_lines.append('</ul>')
+                    in_list = False
+                processed_lines.append(f'<h1>{re.match(r"^# (.*)$", line).group(1)}</h1>')
+            # Check for list items
+            elif re.match(r'^\s*-\s+', line):
+                if not in_list:
+                    processed_lines.append('<ul>')
+                    in_list = True
+                item_content = re.sub(r'^\s*-\s+', '', line)
+                # Don't add br tags inside list items
+                processed_lines.append(f'<li>{item_content}</li>')
+            else:
+                if in_list:
+                    processed_lines.append('</ul>')
+                    in_list = False
+                processed_lines.append(line)
+        
+        # Close list if still open
+        if in_list:
+            processed_lines.append('</ul>')
+        
+        content = '\n'.join(processed_lines)
+        
+        # Process code blocks
+        content = re.sub(r'```(.*?)```', r'<pre><code>\1</code></pre>', content, flags=re.DOTALL)
+        
+        # Apply other conversion patterns
+        for pattern, replacement, *flags in self.patterns:
+            if pattern.startswith('```') or pattern.startswith('^#'):  # Skip already processed patterns
+                continue
+            if flags:
+                content = re.sub(pattern, replacement, content, flags=flags[0])
+            else:
+                content = re.sub(pattern, replacement, content)
+        
+        # Clean up br tags around lists
+        content = re.sub(r'<br>\s*<ul>', '<ul>', content)
+        content = re.sub(r'</ul>\s*<br>', '</ul>', content)
+        content = re.sub(r'<br>\s*<li>', '<li>', content)
+        content = re.sub(r'</li>\s*<br>', '</li>', content)
+        
+        # Process content preserving empty lines
+        lines = content.split('\n')
+        wrapped_paragraphs = []
+        current_para = []
+        
+        for line in lines:
+            # Handle special elements (don't strip these)
+            if (line.startswith('<pre><code>') and line.endswith('</code></pre>')) or \
+               line.startswith('<h') or line.startswith('<ul>') or line.startswith('<li>') or line.startswith('</ul>'):
+                # Flush current paragraph if any
+                if current_para:
+                    para_text = '\n'.join(current_para)
+                    para_text = re.sub(r'\n', '<br>', para_text)
+                    wrapped_paragraphs.append(f'<p>{para_text}</p>')
+                    current_para = []
+                
+                # Add special element
+                wrapped_paragraphs.append(line)
+            elif not line.strip():
+                # Empty line - flush current paragraph but don't add br
+                if current_para:
+                    para_text = '\n'.join(current_para)
+                    para_text = re.sub(r'\n', '<br>', para_text)
+                    wrapped_paragraphs.append(f'<p>{para_text}</p>')
+                    current_para = []
+                # Don't add <br> for empty lines - let CSS handle spacing
+            else:
+                # Regular line - add to current paragraph
+                current_para.append(line.strip())
+        
+        # Flush remaining paragraph
+        if current_para:
+            para_text = '\n'.join(current_para)
+            para_text = re.sub(r'\n', '<br>', para_text)
+            wrapped_paragraphs.append(f'<p>{para_text}</p>')
+        
+        # Join all elements
+        return '\n'.join(wrapped_paragraphs)
+    
 
 
-def load_template(file_path):
-    with open(file_path, "r", encoding="utf-8") as f:
-        return f.read()
+def load_file(file_path):
+    """Load file content with error handling"""
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            return f.read()
+    except FileNotFoundError:
+        print(f"エラー: ファイル '{file_path}' が見つかりません")
+        return None
+    except Exception as e:
+        print(f"エラー: ファイル '{file_path}' の読み込みに失敗しました: {e}")
+        return None
+
+
+def save_file(file_path, content):
+    """Save content to file with error handling"""
+    try:
+        # Create directory if it doesn't exist
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.write(content)
+        return True
+    except Exception as e:
+        print(f"エラー: ファイル '{file_path}' の保存に失敗しました: {e}")
+        return False
 
 
 def extract_date_from_html(html_file):
+    """Extract existing date from HTML file"""
     if not os.path.exists(html_file):
         return None
-
-    with open(html_file, "r", encoding="utf-8") as f:
-        html_content = f.read()
-
-    start_tag = "投稿日: "
-    start_idx = html_content.find(start_tag)
-    if start_idx == -1:
+    
+    content = load_file(html_file)
+    if not content:
         return None
-
-    start_idx += len(start_tag)
-    end_idx = html_content.find("</p>", start_idx)
-
-    if end_idx == -1:
-        return None
-
-    return html_content[start_idx:end_idx].strip()
+    
+    # Look for date pattern
+    date_pattern = r'投稿日: ([^<]+)'
+    match = re.search(date_pattern, content)
+    
+    return match.group(1).strip() if match else None
 
 
 def generate_html_template(template, title, content, existing_date=None):
+    """Generate HTML from template"""
     date = (
         existing_date
         if existing_date
         else datetime.now().strftime("%Y年%m月%d日 %H:%M:%S")
     )
     updated = datetime.now().strftime("%Y年%m月%d日 %H:%M:%S")
-
-    filled_template = template.replace("{title}", title)
-    filled_template = filled_template.replace("{date}", date)
-    filled_template = filled_template.replace("{updated}", updated)
-    filled_template = filled_template.replace("{content}", content)
-
-    return filled_template
-
-
-def convert_md_to_html(md_text):
-    content = "\n".join(md_text.splitlines()[1:])
-    return markdown.markdown(content, extensions=["fenced_code", "tables"])
-
-
-def save_html_file(file_path, html_content):
-    with open(file_path, "w", encoding="utf-8") as f:
-        f.write(html_content)
+    
+    return template.replace("{title}", title).replace("{date}", date).replace("{updated}", updated).replace("{content}", content)
 
 
 def update_blog_index(title, html_filename, blog_index_path):
-    with open(blog_index_path, "r", encoding="utf-8") as f:
-        blog_index_content = f.read()
-
-    if html_filename in blog_index_content:
-        print(f"'{html_filename}' というHTMLファイルは既に存在します。追記しません。")
-        return
-
+    """Update blog index with new entry or update existing entry"""
+    content = load_file(blog_index_path)
+    if not content:
+        return False
+    
+    # Extract filename for comparison
+    filename = html_filename.replace("docs/", "")
+    
+    # Check if entry already exists by looking for the href pattern
+    href_pattern = rf'<a href="{re.escape(filename)}">'
+    existing_match = re.search(href_pattern, content)
+    
+    if existing_match:
+        # Update existing entry with new date
+        date = datetime.now().strftime("%Y年%m月%d日")
+        # Find the entire <li> tag and replace it
+        li_pattern = rf'<li><a href="{re.escape(filename)}">[^<]*</a>: [^<]*</li>'
+        new_entry = f'<li><a href="{filename}">{title}</a>: {date}</li>'
+        updated_content = re.sub(li_pattern, new_entry, content)
+        print(f"'{filename}' のエントリを更新しました")
+        return save_file(blog_index_path, updated_content)
+    
+    # Also check if the same title already exists with different filename
+    title_pattern = rf'<li><a href="[^"]*">{re.escape(title)}</a>: [^<]*</li>'
+    if re.search(title_pattern, content):
+        print(f"タイトル '{title}' は既にインデックスに存在します（異なるファイル名）")
+        return True
+    
+    # Generate new entry
     date = datetime.now().strftime("%Y年%m月%d日")
-    name = html_filename.replace("docs/", "")
-    new_entry = f'<li><a href="{name}">{title}</a>: {date}</li>'
-
-    updated_content = blog_index_content.replace("<ul>", f"<ul>\n          {new_entry}")
-
-    with open(blog_index_path, "w", encoding="utf-8") as f:
-        f.write(updated_content)
+    new_entry = f'<li><a href="{filename}">{title}</a>: {date}</li>'
+    
+    # Insert new entry at the beginning of the list (newest first)
+    updated_content = content.replace("<ul>", f"<ul>\n          {new_entry}")
+    
+    return save_file(blog_index_path, updated_content)
 
 
 def main(md_file, template_file, output_file, blog_index_file):
-    md_content = load_markdown_file(md_file)
-    template_content = load_template(template_file)
+    """Main conversion function"""
+    print(f"Markdownファイルを変換中: {md_file}")
+    
+    # Load files
+    md_content = load_file(md_file)
+    template_content = load_file(template_file)
+    
+    if not md_content or not template_content:
+        print("必要なファイルの読み込みに失敗しました")
+        return False
+    
+    # Extract title and convert content
+    lines = md_content.splitlines()
+    title = lines[0].replace("# ", "") if lines and lines[0].startswith("#") else "Untitled"
+    
+    converter = MarkdownConverter()
+    html_content = converter.convert(md_content)
+    
+    # Get existing date if file exists
     existing_date = extract_date_from_html(output_file)
-    html_content = convert_md_to_html(md_content)
-    title = md_content.splitlines()[0].replace("# ", "")
-    full_html = generate_html_template(
-        template_content, title, html_content, existing_date
-    )
-
-    save_html_file(output_file, full_html)
-    update_blog_index(title, output_file, blog_index_file)
-
-    print(f"変換が完了しました: {output_file}")
+    
+    # Generate final HTML
+    full_html = generate_html_template(template_content, title, html_content, existing_date)
+    
+    # Save HTML file
+    if not save_file(output_file, full_html):
+        return False
+    
+    # Update blog index
+    if not update_blog_index(title, output_file, blog_index_file):
+        print("警告: ブログインデックスの更新に失敗しました")
+    
+    print(f"変換完了: {output_file}")
+    return True
 
 
 if __name__ == "__main__":
     import argparse
-
+    
     parser = argparse.ArgumentParser(
-        description="Convert Markdown to HTML and update blog index"
+        description="MarkdownをHTMLに変換し、ブログインデックスを更新します"
     )
-    parser.add_argument("--md_file", required=True, help="Markdown file to convert")
-    parser.add_argument("--template_file", required=True, help="HTML template file")
-    parser.add_argument("--output_file", required=True, help="Output HTML file")
-    parser.add_argument(
-        "--blog_index_file", required=True, help="Path to blog_index.html file"
-    )
-
+    parser.add_argument("--md_file", required=True, help="変換するMarkdownファイル")
+    parser.add_argument("--template_file", required=True, help="HTMLテンプレートファイル")
+    parser.add_argument("--output_file", required=True, help="出力HTMLファイル")
+    parser.add_argument("--blog_index_file", required=True, help="blog_index.htmlファイルのパス")
+    
     args = parser.parse_args()
-    main(args.md_file, args.template_file, args.output_file, args.blog_index_file)
+    
+    success = main(args.md_file, args.template_file, args.output_file, args.blog_index_file)
+    exit(0 if success else 1)
