@@ -13,35 +13,11 @@
       <header>
         <h1>man hierについて</h1>
         <p>投稿日: 2024年10月16日</p>
-        <p>更新日: 2024年10月16日 23:41:03</p>
+        <p>更新日: 2025年09月13日 13:24:15</p>
       </header>
 
       <article>
-        <p><code>man</code>コマンドはみんな知ってると思う.
-Manualの略であり, <code>man hoge</code>とすると, それに関するマニュアルが読めるというもので, お世話になることも多い.</p>
-<p>manページは, 中を探してみると, 思ったよりいろんなことが書いてあっておもしろい.
-そんなmanページの一つとして<code>hier(7)</code>というページがある.
-これはhierarchyの略で, <code>NAME</code>のセクションには以下のように書いてある.</p>
-<pre><code>hier - description of the filesystem hierarchy
-</code></pre>
-<p>FSH(File System Hierarchy) について書いてあるのだ.
-ちょっとだけ抜粋.</p>
-<pre><code>       A typical Linux system has, among others, the following directories:
-
-       /      This is the root directory.  This is where the whole tree starts.
-
-       /bin   This  directory  contains executable programs which are needed in single user mode and to bring the system
-              up or repair it.
-
-       /boot  Contains static files for the boot loader.  This directory holds only the files which  are  needed  during
-              the  boot  process.  The map installer and configuration files should go to /sbin and /etc.  The operating
-              system kernel (initrd for example) must be located in either / or /boot.
-
-       /dev   Special or device files, which refer to physical devices.  See mknod(1).
-</code></pre>
-<p>よく知らないディレクトリに遭遇したら, このmanページから検索すると簡潔な説明が見れてよい.</p>
-<p>manページのセクション7[^1]は, このようなかゆいところに手が届く記事が多く, 覗いてみるといいかもしれない.</p>
-<p>[^1]: セクション7は, <em>Miscellaneous (including macro packages and conventions)</em>, 日本語にするところの,「いろんなもの」が含まれるとされている. これは<code>man man</code>で確認することができる.</p>
+        <p><code>man</code>コマンドはみんな知ってると思う.<br>Manualの略であり, <code>man hoge</code>とすると, それに関するマニュアルが読めるというもので, お世話になることも多い.</p><p>manページは, 中を探してみると, 思ったよりいろんなことが書いてあっておもしろい.<br>そんなmanページの一つとして<code>hier(7)</code>というページがある.<br>これはhierarchyの略で, <code>NAME</code>のセクションには以下のように書いてある.</p><p><pre><code><br>hier - description of the filesystem hierarchy<br></code></pre></p><p>FSH(File System Hierarchy) について書いてあるのだ.<br>ちょっとだけ抜粋.<br><pre><code><br>A typical Linux system has, among others, the following directories:</p><p>/      This is the root directory.  This is where the whole tree starts.</p><p>/bin   This  directory  contains executable programs which are needed in single user mode and to bring the system<br>up or repair it.</p><p>/boot  Contains static files for the boot loader.  This directory holds only the files which  are  needed  during<br>the  boot  process.  The map installer and configuration files should go to /sbin and /etc.  The operating<br>system kernel (initrd for example) must be located in either / or /boot.</p><p>/dev   Special or device files, which refer to physical devices.  See mknod(1).<br></code></pre></p><p>よく知らないディレクトリに遭遇したら, このmanページから検索すると簡潔な説明が見れてよい.</p><p>manページのセクション7[^1]は, このようなかゆいところに手が届く記事が多く, 覗いてみるといいかもしれない.</p><p>[^1]: セクション7は, <em>Miscellaneous (including macro packages and conventions)</em>, 日本語にするところの,「いろんなもの」が含まれるとされている. これは<code>man man</code>で確認することができる.</p>
       </article>
 
       <div class="navigation">
