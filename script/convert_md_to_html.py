@@ -29,9 +29,7 @@ class MarkdownConverter:
             # Links
             (r'\[([^\]]+)\]\(([^)]+)\)', r'<a href="\2">\1</a>'),
             
-            # Line breaks
-            (r'\n\n', r'</p><p>'),
-            (r'\n', r'<br>'),
+            # Line breaks are handled later by paragraph wrapping
         ]
     
     def convert(self, markdown_text):
@@ -43,54 +41,118 @@ class MarkdownConverter:
         else:
             content_lines = lines
         
-        # Process line by line
+        # Process line by line with nested list support
         processed_lines = []
-        in_list = False
-        
-        for line in content_lines:
-            if not line.strip():
-                # Empty line - close list if open, but don't add br here
-                if in_list:
+        current_depth = 0  # 0 means not inside any list
+        li_open = False    # whether a <li> is currently open at current_depth
+
+        for raw_line in content_lines:
+            if not raw_line.strip():
+                # Empty line - close all open structures gracefully
+                if li_open:
+                    processed_lines.append('</li>')
+                    li_open = False
+                while current_depth > 0:
                     processed_lines.append('</ul>')
-                    in_list = False
-                processed_lines.append('')  # Add empty line marker
+                    current_depth -= 1
+                    # when closing a level, also close the parent li if it was awaiting siblings
+                    if current_depth > 0:
+                        processed_lines.append('</li>')
+                processed_lines.append('')  # empty line marker
                 continue
-            
-            line = line.strip()
-            
-            # Check for headers
-            if re.match(r'^### (.*)$', line):
-                if in_list:
+
+            line_stripped = raw_line.strip()
+
+            # Check for headers (operate outside of lists)
+            if re.match(r'^### (.*)$', line_stripped):
+                if li_open:
+                    processed_lines.append('</li>')
+                    li_open = False
+                while current_depth > 0:
                     processed_lines.append('</ul>')
-                    in_list = False
-                processed_lines.append(f'<h3>{re.match(r"^### (.*)$", line).group(1)}</h3>')
-            elif re.match(r'^## (.*)$', line):
-                if in_list:
+                    current_depth -= 1
+                    if current_depth > 0:
+                        processed_lines.append('</li>')
+                processed_lines.append(f'<h3>{re.match(r"^### (.*)$", line_stripped).group(1)}</h3>')
+                continue
+            elif re.match(r'^## (.*)$', line_stripped):
+                if li_open:
+                    processed_lines.append('</li>')
+                    li_open = False
+                while current_depth > 0:
                     processed_lines.append('</ul>')
-                    in_list = False
-                processed_lines.append(f'<h2>{re.match(r"^## (.*)$", line).group(1)}</h2>')
-            elif re.match(r'^# (.*)$', line):
-                if in_list:
+                    current_depth -= 1
+                    if current_depth > 0:
+                        processed_lines.append('</li>')
+                processed_lines.append(f'<h2>{re.match(r"^## (.*)$", line_stripped).group(1)}</h2>')
+                continue
+            elif re.match(r'^# (.*)$', line_stripped):
+                if li_open:
+                    processed_lines.append('</li>')
+                    li_open = False
+                while current_depth > 0:
                     processed_lines.append('</ul>')
-                    in_list = False
-                processed_lines.append(f'<h1>{re.match(r"^# (.*)$", line).group(1)}</h1>')
-            # Check for list items
-            elif re.match(r'^\s*-\s+', line):
-                if not in_list:
-                    processed_lines.append('<ul>')
-                    in_list = True
-                item_content = re.sub(r'^\s*-\s+', '', line)
-                # Don't add br tags inside list items
-                processed_lines.append(f'<li>{item_content}</li>')
-            else:
-                if in_list:
-                    processed_lines.append('</ul>')
-                    in_list = False
-                processed_lines.append(line)
-        
-        # Close list if still open
-        if in_list:
+                    current_depth -= 1
+                    if current_depth > 0:
+                        processed_lines.append('</li>')
+                processed_lines.append(f'<h1>{re.match(r"^# (.*)$", line_stripped).group(1)}</h1>')
+                continue
+
+            # Detect unordered list item with indent (supports -, *, +)
+            m = re.match(r'^(\s*)([-*+])\s+(.*)$', raw_line)
+            if m:
+                indent = m.group(1)
+                content_text = m.group(3)
+                # tabs count as 4 spaces; one nesting level per 2 spaces
+                indent_spaces = len(indent.replace('\t', '    '))
+                target_depth = indent_spaces // 2 + 1
+
+                # Adjust depth
+                if target_depth > current_depth:
+                    # open new <ul> levels (if increasing without an open li at top, it's fine)
+                    # when increasing from >=1, keep current <li> open so nested <ul> is inside it
+                    for _ in range(current_depth, target_depth):
+                        processed_lines.append('<ul>')
+                    current_depth = target_depth
+                elif target_depth == current_depth:
+                    if li_open:
+                        processed_lines.append('</li>')
+                        li_open = False
+                else:  # target_depth < current_depth
+                    if li_open:
+                        processed_lines.append('</li>')
+                        li_open = False
+                    # close levels down to target_depth
+                    for _ in range(current_depth - target_depth):
+                        processed_lines.append('</ul>')
+                        # after closing a nested list, we are back inside a parent <li>
+                        # that parent <li> should end before starting next sibling
+                        processed_lines.append('</li>')
+                    current_depth = target_depth
+
+                # Start new list item
+                processed_lines.append(f'<li>{content_text}')
+                li_open = True
+                continue
+
+            # Regular paragraph/text line
+            if li_open:
+                # Text line after an open <li> indicates continuation of the same list item
+                processed_lines.append('<br>' + line_stripped)
+                continue
+
+            # Not in list context
+            processed_lines.append(line_stripped)
+
+        # Close any remaining open list structures
+        if li_open:
+            processed_lines.append('</li>')
+            li_open = False
+        while current_depth > 0:
             processed_lines.append('</ul>')
+            current_depth -= 1
+            if current_depth > 0:
+                processed_lines.append('</li>')
         
         content = '\n'.join(processed_lines)
         
@@ -111,6 +173,7 @@ class MarkdownConverter:
         content = re.sub(r'</ul>\s*<br>', '</ul>', content)
         content = re.sub(r'<br>\s*<li>', '<li>', content)
         content = re.sub(r'</li>\s*<br>', '</li>', content)
+        content = re.sub(r'</li>\s*<ul>', '<ul>', content)
         
         # Process content preserving empty lines
         lines = content.split('\n')
@@ -120,7 +183,7 @@ class MarkdownConverter:
         for line in lines:
             # Handle special elements (don't strip these)
             if (line.startswith('<pre><code>') and line.endswith('</code></pre>')) or \
-               line.startswith('<h') or line.startswith('<ul>') or line.startswith('<li>') or line.startswith('</ul>'):
+               line.startswith('<h') or line.startswith('<ul>') or line.startswith('<li>') or line.startswith('</ul>') or line.startswith('</li>'):
                 # Flush current paragraph if any
                 if current_para:
                     para_text = '\n'.join(current_para)
