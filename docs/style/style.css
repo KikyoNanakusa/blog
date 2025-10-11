@@ -76,3 +76,24 @@ code {
   padding: 2px 4px; 
   border-radius: 3px; 
 }
+
+/* Blockquote styling for better visual appearance */
+blockquote {
+  border-left: 4px solid #4aa96c;
+  margin: 1em 0;
+  padding: 0.5em 1em;
+  background: rgba(74, 169, 108, 0.06); /* subtle tint */
+  color: #e8f7ee;
+  font-style: italic;
+  border-radius: 4px;
+}
+
+blockquote p {
+  margin: 0;
+}
+
+/* Nested blockquotes get a slightly darker border */
+blockquote blockquote {
+  border-left-color: #2f7a46;
+  background: rgba(47, 122, 70, 0.04);
+}

@@ -45,6 +45,7 @@ class MarkdownConverter:
         processed_lines = []
         current_depth = 0  # 0 means not inside any list
         li_open = False    # whether a <li> is currently open at current_depth
+        current_bq_depth = 0  # 0 means not inside any blockquote
 
         for raw_line in content_lines:
             if not raw_line.strip():
@@ -58,8 +59,33 @@ class MarkdownConverter:
                     # when closing a level, also close the parent li if it was awaiting siblings
                     if current_depth > 0:
                         processed_lines.append('</li>')
+                # Close any open blockquotes on empty line (simple behavior)
+                while current_bq_depth > 0:
+                    processed_lines.append('</blockquote>')
+                    current_bq_depth -= 1
+
                 processed_lines.append('')  # empty line marker
                 continue
+
+            # Detect blockquote lines (one or more leading '>' possibly with spaces)
+            m_bq = re.match(r'^(?P<markers>(?:>\s*)+)(.*)$', raw_line)
+            if m_bq:
+                markers = m_bq.group('markers')
+                # Count '>' characters to determine nesting depth
+                target_bq = markers.count('>')
+
+                # Adjust blockquote depth (open or close tags as needed)
+                if target_bq > current_bq_depth:
+                    for _ in range(current_bq_depth, target_bq):
+                        processed_lines.append('<blockquote>')
+                    current_bq_depth = target_bq
+                elif target_bq < current_bq_depth:
+                    for _ in range(current_bq_depth - target_bq):
+                        processed_lines.append('</blockquote>')
+                    current_bq_depth = target_bq
+
+                # Replace raw_line with the inner content after the '>' markers
+                raw_line = m_bq.group(2)
 
             line_stripped = raw_line.strip()
 
@@ -153,6 +179,10 @@ class MarkdownConverter:
             current_depth -= 1
             if current_depth > 0:
                 processed_lines.append('</li>')
+        # Close any remaining open blockquotes
+        while current_bq_depth > 0:
+            processed_lines.append('</blockquote>')
+            current_bq_depth -= 1
         
         content = '\n'.join(processed_lines)
         
@@ -179,18 +209,18 @@ class MarkdownConverter:
         lines = content.split('\n')
         wrapped_paragraphs = []
         current_para = []
-        
+
         for line in lines:
             # Handle special elements (don't strip these)
             if (line.startswith('<pre><code>') and line.endswith('</code></pre>')) or \
-               line.startswith('<h') or line.startswith('<ul>') or line.startswith('<li>') or line.startswith('</ul>') or line.startswith('</li>'):
+               line.startswith('<h') or line.startswith('<ul>') or line.startswith('<li>') or line.startswith('</ul>') or line.startswith('</li>') or line.startswith('<blockquote>') or line.startswith('</blockquote>'):
                 # Flush current paragraph if any
                 if current_para:
                     para_text = '\n'.join(current_para)
                     para_text = re.sub(r'\n', '<br>', para_text)
                     wrapped_paragraphs.append(f'<p>{para_text}</p>')
                     current_para = []
-                
+
                 # Add special element
                 wrapped_paragraphs.append(line)
             elif not line.strip():
@@ -204,13 +234,13 @@ class MarkdownConverter:
             else:
                 # Regular line - add to current paragraph
                 current_para.append(line.strip())
-        
+
         # Flush remaining paragraph
         if current_para:
             para_text = '\n'.join(current_para)
             para_text = re.sub(r'\n', '<br>', para_text)
             wrapped_paragraphs.append(f'<p>{para_text}</p>')
-        
+
         # Join all elements
         return '\n'.join(wrapped_paragraphs)
     
