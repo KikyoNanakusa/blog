@@ -309,6 +309,7 @@ def update_blog_index(title, html_filename, blog_index_path):
     
     # Extract filename for comparison
     filename = html_filename.replace("docs/", "")
+    filename = filename.replace("../", "")
     
     # Check if entry already exists by looking for the href pattern
     href_pattern = rf'<a href="{re.escape(filename)}">'
