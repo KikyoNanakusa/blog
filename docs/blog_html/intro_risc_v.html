@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <title>RISC-Vに入門する1 環境構築 - 七草桔梗</title>
+    <meta name="description" content="RISC-Vに入門する1 環境構築">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="../style/style.css">
+  </head>
+
+  <body>
+    <div class="container">
+      <header>
+        <h1>RISC-Vに入門する1 環境構築</h1>
+        <p>投稿日: 2026年02月03日 23:14:58</p>
+        <p>更新日: 2026年02月03日 23:15:59</p>
+      </header>
+
+      <article>
+        <h2>RISC-Vに入門しよう</h2>
+<p>もろもろの事情において, RISC-Vに入門する必要がある.<br>というわけで, とりあえずRISC-VをターゲットにしたCコンパイラを入手する.</p>
+<p>環境はWSL2のUbuntu24でホストマシンはx86-64である.</p>
+<h2> コンパイラを入手</h2>
+<p>以下のコマンドでコンパイラと, glibcと, qemuをインストールできる.</p>
+<p><pre><code><br>sudo apt update<br>sudo apt install -y \<br>gcc-riscv64-linux-gnu \<br>binutils-riscv64-linux-gnu \<br>libc6-dev-riscv64-cross \<br>qemu-user qemu-user-static<br></code></pre></p>
+<h2>コンパイルしてみる</h2>
+<p>適当にCプログラムを書く<br><pre><code><br>#include<stdio.h></p>
+<p>int main() {<br>for (int i = 0; i < 5; i++) {<br>printf("Number is %d\n", i);<br>}</p>
+<p>return 0;<br>}<br></code></pre></p>
+<p>コンパイルしてみる. いろいろオプションはあるようだが, 今回はとりあえず何もつけずに<br><pre><code><br>riscv64-linux-gnu-gcc ./risc-v-test.c -o risc-v-test.o</p>
+<p></code></pre></p>
+<h2>アセンブリを読む</h2>
+<p><code>objdump</code>にrisc-v向けのバイナリがあるらしい.<br>始めにインストールした<code>binutils-riscv64-linux-gnu</code>に入ってるっぽい<br>実行する.<br><pre><code><br>riscv64-linux-gnu-objdump -d risc-v-test.o<br></code></pre></p>
+<p>ディスアセンブル結果がこれ</p>
+<p><pre><code><br>0000000000000694 <main>:<br>694:   1101                    addi    sp,sp,-32<br>696:   ec06                    sd      ra,24(sp)<br>698:   e822                    sd      s0,16(sp)<br>69a:   1000                    addi    s0,sp,32<br>69c:   fe042623                sw      zero,-20(s0)<br>6a0:   a839                    j       6be <main+0x2a><br>6a2:   fec42783                lw      a5,-20(s0)<br>6a6:   85be                    mv      a1,a5<br>6a8:   00000517                auipc   a0,0x0<br>6ac:   03850513                addi    a0,a0,56 # 6e0 <_IO_stdin_used+0x8><br>6b0:   ef1ff0ef                jal     5a0 <printf@plt><br>6b4:   fec42783                lw      a5,-20(s0)<br>6b8:   2785                    addiw   a5,a5,1<br>6ba:   fef42623                sw      a5,-20(s0)<br>6be:   fec42783                lw      a5,-20(s0)<br>6c2:   0007871b                sext.w  a4,a5<br>6c6:   4791                    li      a5,4<br>6c8:   fce7dde3                bge     a5,a4,6a2 <main+0xe><br>6cc:   4781                    li      a5,0<br>6ce:   853e                    mv      a0,a5<br>6d0:   60e2                    ld      ra,24(sp)<br>6d2:   6442                    ld      s0,16(sp)<br>6d4:   6105                    addi    sp,sp,32<br>6d6:   8082                    ret<br></code></pre></p>
+<p>ちょっとまだ記法をよく知らないので, 読めない箇所が多々ある.<br>内容は次回やる.</p>
+<h2>実行してみる</h2>
+<p>なんか動的リンクだとめんどくさそうなので静的リンクでコンパイルしなおす.</p>
+<p><pre><code><br>riscv64-linux-gnu-gcc ./risc-v-test.c -static  -o risc-v-test-static.o<br></code></pre></p>
+<p>qemuで動かす.<br><pre><code><br>qemu-riscv64 ./risc-v-test-static.o<br>Number is 0<br>Number is 1<br>Number is 2<br>Number is 3<br>Number is 4<br></code></pre></p>
+<p>とりあえず環境が整ったので, 次回は中身を勉強する</p>
+      </article>
+
+      <div class="navigation">
+        <p><a href="../blog_index.html">ブログインデックスに戻る</a></p>
+        <p><a href="../index.html">ホームに戻る</a></p>
+      </div>
+    </div>
+
+    <footer>
+      <p>&copy; 2024 七草桔梗. All Rights Reserved.</p>
+    </footer>
+  </body>
+</html>
