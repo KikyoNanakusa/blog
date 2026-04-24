@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <title>WindowsでVPNに接続するとネットに出られなくなった - 七草桔梗</title>
+    <meta name="description" content="WindowsでVPNに接続するとネットに出られなくなった">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="../style/style.css">
+  </head>
+
+  <body>
+    <div class="container">
+      <header>
+        <h1>WindowsでVPNに接続するとネットに出られなくなった</h1>
+        <p>投稿日: 2026年04月24日 18:46:42</p>
+        <p>更新日: 2026年04月24日 18:46:42</p>
+      </header>
+
+      <article>
+        <p>メインのWindows機を新調てからはじめてVPNに接続したら, インターネットに出られなくなった.<br>ゲートウェイがおかしいのかと思っていろいろ試してみたが, 結局VPNの設定を変更したら治ったので, 手順を記録しておく.</p>
+<h2>解決手順</h2>
+<p>1. Windowsの設定からネットワークとインターネット → VPNの設定にアクセス<br>2. 使用しているVPNの設定にアクセスし, <strong>その他のVPNプロパティ</strong>欄にある編集をクリック<br>3. ネットワークタブから, インターネットプロトコル バージョン4 (TCP/IPv4) のプロパティにアクセス<br>4. プロパティのウィンドウから詳細設定にアクセス<br>5. 「リモートネットワークでデフォルトゲートウェイを使う」のチェックボックスを外す<br>6. VPNをつなぎなおす</p>
+<p>Windowsの設定のなんとわかりにくいことか...</p>
+      </article>
+
+      <div class="navigation">
+        <p><a href="../blog_index.html">ブログインデックスに戻る</a></p>
+        <p><a href="../index.html">ホームに戻る</a></p>
+      </div>
+    </div>
+
+    <footer>
+      <p>&copy; 2024 七草桔梗. All Rights Reserved.</p>
+    </footer>
+  </body>
+</html>
