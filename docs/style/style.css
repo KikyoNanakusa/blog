@@ -97,3 +97,25 @@ blockquote blockquote {
   border-left-color: #2f7a46;
   background: rgba(47, 122, 70, 0.04);
 }
+
+figure {
+  margin: 1em 0;
+  text-align: center;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 0.75em auto;
+}
+
+figure img {
+  display: inline-block;
+}
+
+figcaption {
+  margin-top: 0.5em;
+  font-size: 0.95em;
+  color: #cccccc;
+}

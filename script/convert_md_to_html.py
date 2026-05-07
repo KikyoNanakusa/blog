@@ -26,6 +26,9 @@ class MarkdownConverter:
             (r'```(.*?)```', r'<pre><code>\1</code></pre>', re.DOTALL),
             (r'`(.*?)`', r'<code>\1</code>'),
             
+            # Images with optional title/caption
+            (r'!\[([^\]]*)\]\(([^\)\s]+)\s+"([^"]*)"\)', r'<figure><img src="\2" alt="\1"><figcaption>\3</figcaption></figure>'),
+            (r'!\[([^\]]*)\]\(([^)]+)\)', r'<img src="\2" alt="\1">'),
             # Links
             (r'\[([^\]]+)\]\(([^)]+)\)', r'<a href="\2">\1</a>'),
             
@@ -213,7 +216,8 @@ class MarkdownConverter:
         for line in lines:
             # Handle special elements (don't strip these)
             if (line.startswith('<pre><code>') and line.endswith('</code></pre>')) or \
-               line.startswith('<h') or line.startswith('<ul>') or line.startswith('<li>') or line.startswith('</ul>') or line.startswith('</li>') or line.startswith('<blockquote>') or line.startswith('</blockquote>'):
+               line.startswith('<h') or line.startswith('<figure>') or line.startswith('</figure>') or \
+               line.startswith('<ul>') or line.startswith('<li>') or line.startswith('</ul>') or line.startswith('</li>') or line.startswith('<blockquote>') or line.startswith('</blockquote>'):
                 # Flush current paragraph if any
                 if current_para:
                     para_text = '\n'.join(current_para)
