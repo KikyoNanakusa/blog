@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <title>clangでコメント付きアセンブリを吐く - 七草桔梗</title>
+    <meta name="description" content="clangでコメント付きアセンブリを吐く">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="../style/style.css">
+  </head>
+
+  <body>
+    <div class="container">
+      <header>
+        <h1>clangでコメント付きアセンブリを吐く</h1>
+        <p>投稿日: 2026年05月26日 16:18:41</p>
+        <p>更新日: 2026年05月26日 16:21:48</p>
+      </header>
+
+      <article>
+        <p>clangやgccといったコンパイラには <code>-S</code> オプションがあり, これを使うとリンクやオブジェクトファイルの作成を行わずアセンブリだけを出力することができる.<br>clangの<code>-S</code>オプションはさらにほかのオプションと組み合わせて出力を変更することができる. 組み合わせることのできるオプションの中に <code>-fverbose-asm</code> というものがある.<br>これを使うと生成されるアセンブリにコメントがついてちょっと読みやすくなる.<br>helpには以下のように書いてある.</p>
+<blockquote>
+<p>-fverbose-asm           Generate verbose assembly output</p>
+</blockquote>
+<p>例えば以下のコードを <code>-fverbose-asm</code> でコンパイルすると</p>
+<pre><code>int main() {
+  int a = 10;
+  for (int i = 0; i &lt; 10; i++) {
+    printf("%d\n", a--);
+  }
+}
+</code></pre>
+<p>こうなる</p>
+<pre><code>	.text
+	.intel_syntax noprefix
+	.file	"test.c"
+	.globl	main                            # -- Begin function main
+	.p2align	4, 0x90
+	.type	main,@function
+main:                                   # @main
+	.cfi_startproc
+# %bb.0:
+	push	rbp
+	.cfi_def_cfa_offset 16
+	.cfi_offset rbp, -16
+	mov	rbp, rsp
+	.cfi_def_cfa_register rbp
+	sub	rsp, 16
+	mov	dword ptr [rbp - 4], 0
+	mov	dword ptr [rbp - 8], 10
+	mov	dword ptr [rbp - 12], 0
+.LBB0_1:                                # =&gt;This Inner Loop Header: Depth=1
+	cmp	dword ptr [rbp - 12], 10
+	jge	.LBB0_4
+# %bb.2:                                #   in Loop: Header=BB0_1 Depth=1
+	mov	esi, dword ptr [rbp - 8]
+	mov	eax, esi
+	add	eax, -1
+	mov	dword ptr [rbp - 8], eax
+	lea	rdi, [rip + .L.str]
+	mov	al, 0
+	call	printf@PLT
+# %bb.3:                                #   in Loop: Header=BB0_1 Depth=1
+	mov	eax, dword ptr [rbp - 12]
+	add	eax, 1
+	mov	dword ptr [rbp - 12], eax
+	jmp	.LBB0_1
+.LBB0_4:
+	mov	eax, dword ptr [rbp - 4]
+	add	rsp, 16
+	pop	rbp
+	.cfi_def_cfa rsp, 8
+	ret
+.Lfunc_end0:
+	.size	main, .Lfunc_end0-main
+	.cfi_endproc
+                                        # -- End function
+	.type	.L.str,@object                  # @.str
+	.section	.rodata.str1.1,"aMS",@progbits,1
+.L.str:
+	.asciz	"%d\n"
+	.size	.L.str, 4
+
+	.ident	"Ubuntu clang version 18.1.3 (1ubuntu1)"
+	.section	".note.GNU-stack","",@progbits
+	.addrsig
+	.addrsig_sym printf</code></pre>
+<p>関数のはじめとか, ループのヘッダとかがコメントに書いてあって普段よりちょっとわかりやすい.<br>ちなみに, <code>-emit-llvm</code> とは組み合わせられないので注意</p>
+      </article>
+
+      <div class="navigation">
+        <p><a href="../blog_index.html">ブログインデックスに戻る</a></p>
+        <p><a href="../index.html">ホームに戻る</a></p>
+      </div>
+    </div>
+
+    <footer>
+      <p>&copy; 2024 七草桔梗. All Rights Reserved.</p>
+    </footer>
+  </body>
+</html>
