@@ -4,6 +4,7 @@ Markdown to HTML converter using only standard library
 """
 import re
 import os
+import html
 from datetime import datetime
 from pathlib import Path
 
@@ -43,7 +44,42 @@ class MarkdownConverter:
             content_lines = lines[1:]
         else:
             content_lines = lines
-        
+
+        # Extract fenced code blocks first and replace them with placeholders.
+        # This keeps their contents from being interpreted as markdown
+        # (headers, lists, blockquotes...) and preserves indentation/newlines.
+        code_blocks = []
+        extracted_lines = []
+        in_code = False
+        code_buffer = []
+        for raw_line in content_lines:
+            if raw_line.lstrip().startswith('```'):
+                if not in_code:
+                    # opening fence (language identifier, if any, is ignored)
+                    in_code = True
+                    code_buffer = []
+                else:
+                    # closing fence
+                    in_code = False
+                    escaped = '\n'.join(
+                        html.escape(l, quote=False) for l in code_buffer
+                    )
+                    placeholder = f'CODEBLOCKPLACEHOLDER{len(code_blocks)}'
+                    code_blocks.append(f'<pre><code>{escaped}</code></pre>')
+                    extracted_lines.append(placeholder)
+                continue
+            if in_code:
+                code_buffer.append(raw_line)
+            else:
+                extracted_lines.append(raw_line)
+        # Unterminated code block: flush whatever was buffered.
+        if in_code and code_buffer:
+            escaped = '\n'.join(html.escape(l, quote=False) for l in code_buffer)
+            placeholder = f'CODEBLOCKPLACEHOLDER{len(code_blocks)}'
+            code_blocks.append(f'<pre><code>{escaped}</code></pre>')
+            extracted_lines.append(placeholder)
+        content_lines = extracted_lines
+
         # Process line by line with nested list support
         processed_lines = []
         current_depth = 0  # 0 means not inside any list
@@ -246,7 +282,15 @@ class MarkdownConverter:
             wrapped_paragraphs.append(f'<p>{para_text}</p>')
 
         # Join all elements
-        return '\n'.join(wrapped_paragraphs)
+        result = '\n'.join(wrapped_paragraphs)
+
+        # Restore extracted code blocks. A placeholder on its own line was
+        # wrapped in a <p>...</p>; strip that wrapper so the <pre> stands alone.
+        for i, block_html in enumerate(code_blocks):
+            placeholder = f'CODEBLOCKPLACEHOLDER{i}'
+            result = result.replace(f'<p>{placeholder}</p>', block_html)
+            result = result.replace(placeholder, block_html)
+        return result
     
 
 
