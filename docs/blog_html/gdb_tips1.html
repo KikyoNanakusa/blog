@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <title>gdb使い方メモ1 (catch syscall) - 七草桔梗</title>
+    <meta name="description" content="gdb使い方メモ1 (catch syscall)">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="../style/style.css">
+  </head>
+
+  <body>
+    <div class="container">
+      <header>
+        <h1>gdb使い方メモ1 (catch syscall)</h1>
+        <p>投稿日: 2026年06月09日 03:35:29</p>
+        <p>更新日: 2026年06月09日 03:35:29</p>
+      </header>
+
+      <article>
+        <p>gdbの使い方を毎回忘れているのでメモっておく. 多分今後もメモるので1.</p>
+<h2>syscall にbreak pointを張りたい</h2>
+<p><code>catch syscall [syscall name]</code> で張れる.</p>
+<p>こんな感じ<br><pre><code>(gdb) catch syscall write
+r 
+Catchpoint 1 (call to syscall write), 0x00007ffff7d1c5a4 in __GI___libc_write (fd=1, buf=0x555555579500, nbytes=48)</code></pre></p>
+<p>条件も指定できる<br><pre><code>(gdb) catch syscall write 
+(gdb) condition 1 $rax &lt; 0 # raxが負だったら止める</code></pre></p>
+<p>便利だね</p>
+      </article>
+
+      <div class="navigation">
+        <p><a href="../blog_index.html">ブログインデックスに戻る</a></p>
+        <p><a href="../index.html">ホームに戻る</a></p>
+      </div>
+    </div>
+
+    <footer>
+      <p>&copy; 2024 七草桔梗. All Rights Reserved.</p>
+    </footer>
+  </body>
+</html>
