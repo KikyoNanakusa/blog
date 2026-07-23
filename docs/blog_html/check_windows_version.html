@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <title>Windowsのバージョンを確認する - 七草桔梗</title>
+    <meta name="description" content="Windowsのバージョンを確認する">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="../style/style.css">
+  </head>
+
+  <body>
+    <div class="container">
+      <header>
+        <h1>Windowsのバージョンを確認する</h1>
+        <p>投稿日: 2026年07月23日 14:59:21</p>
+        <p>更新日: 2026年07月23日 14:59:21</p>
+      </header>
+
+      <article>
+        <p>Windowsの詳細なバージョン情報を確認する手段をメモする．</p>
+<h2>verコマンド</h2>
+<p>windowsに標準で搭載されている <code>ver</code> コマンドを使用することで，CUIを通じてWindowsのバージョンを確認することができる．</p>
+<pre><code>Microsoft Windows [Version 10.0.26200.8875]
+(c) Microsoft Corporation. All rights reserved.
+
+C:\Users\nanakusa&gt;ver
+
+Microsoft Windows [Version 10.0.26200.8875]</code></pre>
+<h2>Get-CmiInstance</h2>
+<p>Powershellで <code>Get-CmiInstance</code> を実行することで，Windowsのバージョンを始めとする情報を確認することができる．</p>
+<pre><code>
+SystemDirectory     Organization BuildNumber RegisteredUser SerialNumber            Version
+---------------     ------------ ----------- -------------- ------------            -------
+C:\Windows\system32              26200       nanakusa       xxxxx-xxxxx-xxxxx-xxxxx 10.0.26200</code></pre>
+<p><code>Get-ComputerInfo</code> を使えば，より詳細な情報を確認することができる．</p>
+<h2>winver.exe</h2>
+<p>winver.exeを起動することで，GUIを通じてWindowsのバージョンを確認することができる．</p>
+<p><img src="../image/winver.png" alt="winver.exeのスクリーンショット"></p>
+<p>他にもいくつか方法があるようだが，いったんここまでとする．</p>
+      </article>
+
+      <div class="navigation">
+        <p><a href="../blog_index.html">ブログインデックスに戻る</a></p>
+        <p><a href="../index.html">ホームに戻る</a></p>
+      </div>
+    </div>
+
+    <footer>
+      <p>&copy; 2024 七草桔梗. All Rights Reserved.</p>
+    </footer>
+  </body>
+</html>
