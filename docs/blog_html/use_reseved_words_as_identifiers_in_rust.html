@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <title>Rustで予約語を識別子として使う(Raw Identifier) - 七草桔梗</title>
+    <meta name="description" content="Rustで予約語を識別子として使う(Raw Identifier)">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="../style/style.css">
+  </head>
+
+  <body>
+    <div class="container">
+      <header>
+        <h1>Rustで予約語を識別子として使う(Raw Identifier)</h1>
+        <p>投稿日: 2026年08月03日 22:47:58</p>
+        <p>更新日: 2026年08月03日 22:47:58</p>
+      </header>
+
+      <article>
+        <p><code>type</code>とか<code>match</code>みたいな予約語を変数名として使いたい時がある．<br>例えば，ELFのパーサを書いていて，<code>ElfHeader</code>構造体に<code>e_type</code>として<code>type</code>を持たせたい時など．</p>
+<p>そんな時は<code>r#</code>を先頭に付与すると，予約語が使えるようになる．</p>
+<pre><code>struct ElfHeader {
+    pub ident: EIdent, 
+    pub r#type: u16, 
+    pub machine: u16, 
+    ...
+}</code></pre>
+<p>みたいな感じ．</p>
+<h2>参考文献</h2>
+<ul>
+<li>https://doc.rust-lang.org/rust-by-example/compatibility/raw_identifiers.html
+</li>
+</ul>
+      </article>
+
+      <div class="navigation">
+        <p><a href="../blog_index.html">ブログインデックスに戻る</a></p>
+        <p><a href="../index.html">ホームに戻る</a></p>
+      </div>
+    </div>
+
+    <footer>
+      <p>&copy; 2024 七草桔梗. All Rights Reserved.</p>
+    </footer>
+  </body>
+</html>
