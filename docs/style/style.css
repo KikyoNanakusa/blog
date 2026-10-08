@@ -5,7 +5,7 @@ body {
   line-height: 1.6;
   margin: 20px;
 }
-h1, h2 {
+h1, h2, .achievements h3 {
   color: #d2f5e3; 
 }
 .container {
