@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <title>アセンブリにおけるコメント記法 - 七草桔梗</title>
+    <meta name="description" content="アセンブリにおけるコメント記法">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="../style/style.css">
+  </head>
+
+  <body>
+    <div class="container">
+      <header>
+        <h1>アセンブリにおけるコメント記法</h1>
+        <p>投稿日: 2026年11月25日 17:12:58</p>
+        <p>更新日: 2026年11月25日 17:12:58</p>
+      </header>
+
+      <article>
+        <p>筆者は長らくバイナリ解析の方面からx86-64アセンブリに触れていたため, <code>;</code>がアセンブリにおける標準的なコメント記法であると思っていた．<br>しかしながら，実際にはそうではないということを知ったのでメモしておく．</p>
+<h2>nasm</h2>
+<p>nasm(Netwide Assembler)はx86 CPU architectureを対象にしたアセンブラである．<br>以下のリポジトリで開発されており，広く知られるアセンブラである．</p>
+<ul>
+<li>https://github.com/netwide-assembler/nasm
+</li>
+</ul>
+<p>nasmにおける行コメントの記法は <code>;</code> である．<br>よって，以下のアセンブリは問題なくアセンブルすることができる．</p>
+<pre><code>global _start 
+section .text 
+
+_start:
+    mov rax, 60
+    mov rdi, 42
+    syscall ; exit(42)</code></pre>
+<pre><code>nasm -f elf64 test_nasm.s -o test_nasm.o &amp;&amp; ld test_nasm.o -o test_nasm</code></pre>
+<h2>gas</h2>
+<p>gas(GNU Assembler) はGNU Projectの開発するアセンブラで，GNU Binutilsパッケージの一部として配布されている．<br>このgasにおいて，<code>;</code>は文の区切りとして使用されている．<br>つまり，C言語におけるセミコロンと同じような記法として定義されている．</p>
+<pre><code>mov rax, 60; mov rdi, 42; </code></pre>
+<p>よって，以下のアセンブリはアセンブルすることができない．</p>
+<pre><code>.intel_syntax noprefix 
+.global _start 
+.section .text 
+
+_start:
+    mov rax, 60
+    mov rdi, 42
+    syscall ; exit(42)</code></pre>
+<pre><code>$ as test_gas.s -o test_gas.o
+test_gas.s: Assembler messages:
+test_gas.s:8: Error: invalid character '(' in mnemonic</code></pre>
+<p>gasにおける正しい行コメント記法は<code>#</code>である．よって上記の例は正しくは以下のようになる．</p>
+<pre><code>.intel_syntax noprefix 
+.global _start 
+.section .text 
+
+_start: 
+    mov rax, 60
+    mov rdi, 42 
+    syscall # exit(42)</code></pre>
+<p>この衝突は少し厄介で，nasmだと思って<code>;</code>の後にコメントとしてアセンブル可能な文を書いてしまうと，gasでアセンブルした際にはエラー無くアセンブルできてしまう．<br>極端な例を示すと，以下のアセンブリはgasでもnasmでもエラー無くアセンブルできるが，異なるオブジェクトファイルが生成されてしまう．<br>(gasなら2命令，nasmなら1命令)</p>
+<pre><code>mov rax, 60; mov rax 1</code></pre>
+<p>今時アセンブリを手書きする人は少ないだろうが，世の中にはいろいろなアセンブリがあり，記法が衝突していることもあるので気を付けよう(1敗)．</p>
+      </article>
+
+      <div class="navigation">
+        <p><a href="../blog_index.html">ブログインデックスに戻る</a></p>
+        <p><a href="../index.html">ホームに戻る</a></p>
+      </div>
+    </div>
+
+    <footer>
+      <p>&copy; 2024 七草桔梗. All Rights Reserved.</p>
+    </footer>
+  </body>
+</html>
